@@ -1,0 +1,27 @@
+exportPattern("^[[:alpha:]]+")
+import(BiocGenerics)
+import(methods)
+import(Biostrings)
+import(IRanges)
+import(tcltk)
+import(STRINGdb)
+
+importMethodsFrom(hash, has.key, keys)
+importFrom(hash, hash)
+
+importFrom(ggplot2,
+   aes, element_blank, element_rect, element_text,
+   geom_point, geom_vline, ggsave, qplot,
+   scale_colour_gradient2, scale_x_discrete, theme)
+
+importFrom(graphics,
+   abline, barplot, legend, lines, mtext, par,
+   plot, points)
+
+importFrom(grDevices, dev.off, jpeg, pdf)
+
+importFrom(plyr, arrange, count)
+
+importFrom(RColorBrewer, brewer.pal)
+
+importFrom(sqldf, sqldf)
