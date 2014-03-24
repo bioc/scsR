@@ -68,14 +68,14 @@ If you come from Excel and/or Matlab you can generate a text file with the forma
 read.table(file\_name, header=TRUE, fill=TRUE, quote="", stringsAsFactors=FALSE)\\\\
 
 
-As an example, we use the analyzed data of two genome-wide siRNA screens on the UUKUNIEMI virus, performed with different siRNA libraries: QIAGEN unpooled and DHARMACON pooled. 
-In both the screens Hela Cell Lines have been infected by the UUKUNIEMI virus and the data has been collected and analyzed using latest technologies.
+As an example, we use the analyzed data on the cell number of two genome-wide siRNA screens, performed with different siRNA libraries: QIAGEN unpooled and DHARMACON pooled. 
+In both the screens Hela Cell Lines have been infected by a pathogen and the data has been collected and analyzed using latest technologies.
 Several phenotypes can be inferred from this screen: \\
 - infection inhibition (i.e. when the number of infected cells is reduced)\\
 - infection enhancement (i.e. when the number infected cells increses )\\
 - cell number reduced (i.e. when cell-death and/or block of cell proliferation occurs)\\
 - cell number increased (i.e. when increase in cell proliferation occurs) \\
-We added to this package the data for the cell number phenotype (that we are going to use in the following examples ). However we encrypted the siRNA sequences for copyright issues, in a way that preserves the relation seed vs sequences (i.e. the groups of sequences that share the same seed remain the same) \\
+We added to this package the data for the cell number phenotype (that we are going to use in the following examples ). However we encrypted both the siRNA sequences and the gene identifiers for copyright issues, in a way that preserves the relation seed vs sequences (i.e. the groups of sequences that share the same seed remain the same) \\
 
 
 <<load_data>>=
