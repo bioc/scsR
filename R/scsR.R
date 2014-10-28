@@ -1,8 +1,12 @@
 add_rank_col = function(screen, reverse=FALSE,  scoreColName="score", geneColName="GeneID"){
-  genesMedian = sqldf(paste('select ',geneColName,', median(',scoreColName,') as median from screen group by ',geneColName, sep=""))
+  genesMedian = sqldf(paste('select ',geneColName,', median(',scoreColName,') as median from screen group by ',geneColName, sep=""), stringsAsFactors=FALSE)
   screen5 = merge(screen, genesMedian, by.x=geneColName, by.y=geneColName, x.all=TRUE, na.rm=TRUE)
-  genesAvg = sqldf(paste('select ',geneColName,', avg(',scoreColName,') as average from screen group by ',geneColName, sep=""))
+  genesAvg = sqldf(paste('select ',geneColName,', avg(',scoreColName,') as average from screen group by ',geneColName, sep=""), stringsAsFactors=FALSE)
   screen5 = merge(screen5, genesAvg, by.x=geneColName, by.y=geneColName, x.all=TRUE, na.rm=TRUE)
+  genesMax = sqldf(paste('select ',geneColName,', max(',scoreColName,') as max from screen group by ',geneColName, sep=""), stringsAsFactors=FALSE)
+  screen5 = merge(screen5, genesMax, by.x=geneColName, by.y=geneColName, x.all=TRUE, na.rm=TRUE)
+  genesMin = sqldf(paste('select ',geneColName,', min(',scoreColName,') as min from screen group by ',geneColName, sep=""), stringsAsFactors=FALSE)
+  screen5 = merge(screen5, genesMin, by.x=geneColName, by.y=geneColName, x.all=TRUE, na.rm=TRUE)
   rsa_df = launch_RSA(screen5, LB=-10, UB=10, reverse=reverse, strScoreCol=scoreColName, strGeneCol=geneColName)
   return(rsa_df)
 }
@@ -127,6 +131,24 @@ enrichment_geneSet = function(genesetA, genesetB, background=NULL, quiet=FALSE){
   }
   return(phyper(x, m, n, k, FALSE))
 }
+
+
+# enrichment_ppi_vector <- function(genesVectors, limit=400, STRINGversion="9_05", species_ncbi_taxonomy_id=9606){
+#   
+#   string_db <- STRINGdb$new( version=STRINGversion, species=species_ncbi_taxonomy_id, score_threshold=0, input_directory="" )
+#   enrichList = c()
+#   
+#   genes=genesVectors[[1]]
+#   for(i in 2:length(genesVectors)){ genes=intersect(genes, genesVectors[[i]])  }
+#   for(i in 1:length(genesVectors)){genesVectors[[i]] = intersect(genesVectors[[i]], genes)}
+#   cat("INFO: we are benchmarking ",length(genes), "genes")
+#   
+#   for(i in 1:length(genesVectors)){
+#     stringGenes = string_db$mp(genesVectors[[i]][0:limit])
+#     enrichList[i] = string_db$get_ppi_enrichment(stringGenes)$enrichment
+#   }
+#   return(enrichList)
+# }
 
 
 get_sd_quant = function(sdval, score, sd_matrix){
@@ -425,7 +447,11 @@ seeds_analysis = function(screen, seedColName="seed7",  scoreColName="score", hi
     seeds7=data.frame(seeds7, miRNA=miRNAcol, stringsAsFactors=FALSE)
   }
   
-  return(arrange(seeds7, pvalue))
+  res1 = arrange(seeds7, pvalue)
+  res1$score = round(res1$score, digits=4)
+  res1$ratiosHitsVsCount = round(res1$ratiosHitsVsCount, digits=4)
+  res1$sd = round(res1$sd, digits=4)
+  return(res1)
 }
 
 
@@ -474,6 +500,109 @@ seed_correction = function(screen, seedColName="seed7", scoreColName="score",
   screen = arrange(screen, previous_order_temp)
   screen = delColDf(screen, "previous_order_temp")
   return(screen)
+}
+
+
+
+seed_correction_pooled = function(screen, seedColName="seed7", scoreColName="score", 
+                                  geneColName="GeneID", fixed_correction_coeff=0.4, 
+                                  sd_correction_coeff=0.6, min_siRNAs_x_seed=4, poolSize=4, enhancer_analysis=NULL, 
+                                  use_all_seeds=TRUE, progress_bar=FALSE){
+  
+  if( exists("progress_bar") && progress_bar) pb <- txtProgressBar(min = 0, max = nrow(screen)/1000, style = 3, width=100)
+  previous_order_temp<-NULL
+  screen = data.frame(screen, previous_order_temp = seq(1:nrow(screen)))
+  sd_matrix = create_sd_matrix(screen, seedColName="seed7", scoreColName="score")
+  screen = arrange(screen, screen[,seedColName])
+  medianScore = median(screen[,scoreColName])
+  meanScore = mean(screen[,scoreColName])
+  zscoresV = c()
+  zdeltasV = c()
+  scoresV = c()
+  currentSeed=NULL
+  for(i in 1:nrow(screen)){
+    if(( exists("progress_bar") && progress_bar ) && i%%1000==0) setTxtProgressBar(pb, i/1000)
+    if(is.null(currentSeed)) currentSeed = screen[,seedColName][i]
+    if(currentSeed != screen[,seedColName][i]){
+      zdeltas2V = c()
+      zscores2V = c()
+      for(j in 1:length(scoresV)){
+        scores2V = scoresV[-j]
+        if(length(scores2V) >= min_siRNAs_x_seed ){
+          deltaS = medianScore - median(scores2V)
+          zscores2V[j] = scoresV[j] +  ( fixed_correction_coeff + (sd_correction_coeff/20)*(20-get_sd_quant(sd(scores2V), mean(scores2V), sd_matrix)) )*deltaS
+          zdeltas2V[j] =  ( fixed_correction_coeff + (sd_correction_coeff/20)*(20-get_sd_quant(sd(scores2V), mean(scores2V), sd_matrix)) )*deltaS
+        }else{
+          zscores2V[j] = NA
+          zdeltas2V[j] = NA
+        }
+      }
+      zscoresV = c(zscoresV, zscores2V)
+      zdeltasV = c(zdeltasV, zdeltas2V)
+      currentSeed = screen[,seedColName][i]
+      scoresV=c()
+    } 
+    scoresV = c(scoresV, screen[,scoreColName][i])
+  }
+  zscores2V = c()
+  zdeltas2V = c()
+  for(j in 1:length(scoresV)){
+    scores2V = scoresV[-j]
+    if(length(scores2V) >= min_siRNAs_x_seed ){
+      deltaS = medianScore - median(scores2V)
+      zscores2V[j] = scoresV[j] +  ( fixed_correction_coeff + (sd_correction_coeff/20)*(20-get_sd_quant(sd(scores2V), mean(scores2V), sd_matrix)) )*deltaS
+      zdeltas2V[j] = ( fixed_correction_coeff + (sd_correction_coeff/20)*(20-get_sd_quant(sd(scores2V), mean(scores2V), sd_matrix)) )*deltaS
+    }else{ 
+      zscores2V[j] = NA
+      zdeltas2V[j] = NA
+    }
+  }
+  zscoresV = c(zscoresV, zscores2V)
+  zdeltasV = c(zdeltasV, zdeltas2V)
+  screen = data.frame(screen, deltas=zdeltasV)
+  screen = data.frame(screen, scores_old=screen$score)
+  screen = bydfa(screen, "GeneID", "deltas", function(x){return(.pooled_weightened_mean(x, medianScore, poolSize=poolSize, enhancer_analysis=enhancer_analysis, use_all_seeds=use_all_seeds))}, "deltaSum")
+  screen$score = screen$score + screen$deltaSum
+  
+  screen = arrange(screen, previous_order_temp)
+  screen = delColDf(screen, "previous_order_temp")
+  screen = delColDf(screen, "deltaSum")
+  screen = delColDf(screen, "scores_old")
+  
+  return(screen)
+}
+
+
+.pooled_weightened_mean <- function(vect, baseVal, enhancer_analysis, poolSize=4, use_all_seeds=TRUE){
+  vect = vect[!is.na(vect)] 
+  if(length(vect)==0) return(0)
+  maxVal = max(vect, na.rm=TRUE)
+  minVal = min(vect, na.rm=TRUE)
+  dist = 0
+  delta = 0
+  if(!use_all_seeds){
+    if(is.null(enhancer_analysis)){
+      cat("\nERROR: If you want to apply a minmax analysis than you need to set the enhancer_analysis variable. \nLook at the documentation\n") 
+      stop()
+    }
+    if(enhancer_analysis) {  if(minVal < baseVal){delta = minVal}}else{if(maxVal > baseVal){delta = maxVal}}
+  }else{
+    for(i in 1:length(vect)){
+      x = vect[i] - baseVal
+      dist = dist + abs(x)
+    }
+    if(length(vect) < poolSize){
+      dist = (dist * poolSize) / length(vect)
+    }
+    for(i in 1:length(vect)){
+      x = vect[i] - baseVal
+      safetyFactor=1
+      #if(enhancer_analysis && x>0){safetyFactor=0.5 }
+      #if(!enhancer_analysis && x<0){safetyFactor=0.5 }
+      delta = delta + safetyFactor * (abs(x)*x)/(dist)
+    }  
+  }
+  return(delta)
 }
 
 
