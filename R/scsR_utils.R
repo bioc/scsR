@@ -179,7 +179,7 @@ transcribe_seqs = function(df, seqColName="siRNA_seq", toDNA=FALSE, progress_bar
     }
     if(!is.na(seqV[i]) & nchar(seqV[i])>0 ){
       if(grepl( "U", seqV[i]) | grepl("u", seqV[i])) {
-        seqTemp = rna2dna(RNAString(seqV[i]))
+        seqTemp = DNAString(RNAString(seqV[i]))
       }else{
         seqTemp = DNAString(seqV[i])
       }
