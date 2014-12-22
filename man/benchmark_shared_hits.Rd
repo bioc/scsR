@@ -11,7 +11,7 @@ Then we display the number of shared best hits for different n, in a graph (if v
 }
 \usage{
 benchmark_shared_hits(glA, glB, col, avoidIntersectL=FALSE, 
-                                     output_file=NULL, npoints=500, title="", scaleAXPoint = 1, 
+                                     output_file=NULL, npoints=400, title="", scaleAXPoint = 1, 
                                      scaleBXPoint = NULL, fixedBXPoint=400, displayRandomMultipleLines=TRUE, 
                                      nrandom=20, intersectGenes=TRUE, visualize_pval=FALSE, max_ylim=NULL, xlab=NULL, ylab="shared hits")
 }

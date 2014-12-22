@@ -1,5 +1,5 @@
 benchmark_shared_hits = function(glA, glB, col, avoidIntersectL=FALSE, 
-                                 output_file=NULL, npoints=500, title="", scaleAXPoint = 1, 
+                                 output_file=NULL, npoints=400, title="", scaleAXPoint = 1, 
                                  scaleBXPoint = NULL, fixedBXPoint=400, displayRandomMultipleLines=TRUE, 
                                  nrandom=20, intersectGenes=TRUE, visualize_pval=FALSE, max_ylim=NULL, xlab=NULL, ylab="shared hits"){
   
@@ -126,15 +126,20 @@ benchmark_shared_hits = function(glA, glB, col, avoidIntersectL=FALSE,
 
 enrichment_heatmap = function(genesVectors, vectorsNames, output_file=NULL, title="", limit=400, species_ncbi_taxonomy_id=9606,
                               enrichmentType="Process", limitMultiPicture=NULL, fdr_threshold=0.05, pvalue_threshold=NULL, 
-                              cexRow=NULL, cexCol=1, STRINGversion="9_05", selectTermsVector=NULL, iea = TRUE, sortingMethod="rowMeans"){
+                              cexRow=NULL, cexCol=1, STRINGversion="9_05", selectTermsVector=NULL, iea = TRUE, sortingMethod="rowMeans", avoidIntersect=FALSE){
   
   string_db <- STRINGdb$new( version=STRINGversion, species=species_ncbi_taxonomy_id, score_threshold=0, input_directory="" )
   enrichList = list()
   
-  genes=genesVectors[[1]]
-  for(i in 2:length(genesVectors)){ genes=intersect(genes, genesVectors[[i]])  }
-  for(i in 1:length(genesVectors)){genesVectors[[i]] = intersect(genesVectors[[i]], genes)}
-  cat("INFO: we are benchmarking ",length(genes), "genes")
+  if(!avoidIntersect) {
+    genes=genesVectors[[1]]
+    for(i in 2:length(genesVectors)){ genes=intersect(genes, genesVectors[[i]])  }
+    for(i in 1:length(genesVectors)){genesVectors[[i]] = intersect(genesVectors[[i]], genes)}
+    cat("INFO: we are benchmarking ",length(genes), "genes\n")
+  }else{
+    cat("WARNING: Your input has not been intersected; hence the datasets could not be perfectly comparable.\n")
+    for(i in 1:length(genesVectors)){genesVectors[[i]] = unique(genesVectors[[i]])}
+  }
   
   for(i in 1:length(genesVectors)){
     stringGenes = string_db$mp(genesVectors[[i]][0:limit])
@@ -177,7 +182,7 @@ enrichment_heatmap = function(genesVectors, vectorsNames, output_file=NULL, titl
   
   if(is.null(limitMultiPicture)){limitMultiPicture= nrow(enrichMatr)+2}
   if(!is.null(sortingMethod) && sortingMethod=="rowMeans" && nrow(enrichMatr)>1){
-    enrichMatr = enrichMatr[order(rowMeans(enrichMatr, na.rm=TRUE), decreasing=FALSE),]
+    enrichMatr = enrichMatr[order(rowMeans(enrichMatr, na.rm=TRUE), decreasing=TRUE),]
   }
   
   if(is.null(cexRow)){
@@ -193,14 +198,27 @@ enrichment_heatmap = function(genesVectors, vectorsNames, output_file=NULL, titl
   
   }
   
+  lmat = rbind(c(0,3),c(2,1),c(0,4))
+  lwid = c(0.7,5)
+  lhei = c(1,5,0.7)
+  
   if(nrow(enrichMatr)%%limitMultiPicture == 1 && nrow(enrichMatr)!=1) limitMultiPicture=limitMultiPicture+1
   if(nrow(enrichMatr)>1){
-    if(!is.null(output_file)) pdf(output_file)
+    if(!is.null(output_file)) pdf(output_file, paper="a4", width=12, height=12, pagecentre=FALSE)
     suppressWarnings(par(new=TRUE))
     for(i in 1:ceiling(nrow(enrichMatr)/limitMultiPicture)){
       enrichMatrTemp=enrichMatr[(limitMultiPicture*(i-1)+1):min(limitMultiPicture*(i), nrow(enrichMatr)),]
-      heatmap(enrichMatrTemp, Rowv=NA, Colv = NA, col = brewer.pal(6,"Blues"), scale = "none",
-              margins = c(7,30),  cexRow=cexRow, cexCol=cexCol, main = paste("                         ",title, sep=""))
+      #heatmap(enrichMatrTemp, Rowv=NA, Colv = NA, col = brewer.pal(6,"Blues"), scale = "none",
+      #         margins = c(7,30),  cexRow=cexRow, cexCol=cexCol, main=paste("                                     ",title, sep=""))
+      tempV = c()
+      for(j in 1:ncol(enrichMatrTemp)){tempV = c(tempV, enrichMatrTemp[,j])}
+      tempV=unique(tempV[!is.na(tempV)])
+      
+      if(length(tempV)==1){
+        enrichMatrTemp[is.na(enrichMatrTemp)] <- 0 
+      }  
+      suppressWarnings(heatmap.2(enrichMatrTemp, density.info="none", trace="none", keysize=1,lmat = lmat, lhei=lhei, lwid=lwid,Rowv=NA, Colv = NA, col = brewer.pal(6,"Blues"), scale = "none",
+                margins = c(7,30),  cexRow=cexRow, cexCol=1, main=paste("                ",title, sep="")))
     }  
     if(!is.null(output_file)) dev.off()
     suppressWarnings(par(new=FALSE))

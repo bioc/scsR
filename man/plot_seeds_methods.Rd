@@ -82,7 +82,7 @@ Andrea Franceschini
 	data(uuk_screen)
 
 	# to speed up the example we use only the first 2500 rows
-	uuk_screen_reduced = uuk_screen[1:2500,]
+	uuk_screen_reduced = uuk_screen[1:5000,]
 
 	plot_effective_seeds_head(add_seed(uuk_screen_reduced))
 }

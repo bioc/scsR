@@ -9,7 +9,7 @@ Produces an heatmap showing the enriched annotations that are found in the input
 \usage{
 enrichment_heatmap(genesVectors, vectorsNames, output_file=NULL, title="", limit=400, species_ncbi_taxonomy_id=9606,
                               enrichmentType="Process", limitMultiPicture=NULL, fdr_threshold=0.05, pvalue_threshold=NULL, 
-                              cexRow=NULL, cexCol=1, STRINGversion="9_05", selectTermsVector=NULL, iea = TRUE, sortingMethod="rowMeans")
+                              cexRow=NULL, cexCol=1, STRINGversion="9_05", selectTermsVector=NULL, iea = TRUE, sortingMethod="rowMeans", avoidIntersect = FALSE)
 }
 \arguments{
   \item{genesVectors}{
@@ -59,6 +59,9 @@ enrichment_heatmap(genesVectors, vectorsNames, output_file=NULL, title="", limit
 	specify whether to use Electronic Inferred Association annotations (to be used in case you are querying the GeneOntology). (boolean)
 }
  \item{sortingMethod}{
+ specify whether a sorting method should be applied. For the moment, the only available method is rowMeans.  (character vector) 
+}
+ \item{avoidIntersect}{
  specify whether a sorting method should be applied. For the moment, the only available method is rowMeans.  (character vector) 
 }
 }

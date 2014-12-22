@@ -14,7 +14,7 @@
 \SweaveOpts{concordance=TRUE, strip.white=false}
 \title{scsR (seed correction for siRNA) Package Vignette}
 \author{Andrea Franceschini}
-\date{12 February 2014}
+\date{28 October 2014}
 \maketitle
 
 \begin{Schunk}
@@ -28,13 +28,12 @@
 ScsR (Seed Correction for siRNA), is an R package that provides suitable methods to identify, visualize and correct for off-target effects in genome-wide siRNA screens.
 As it has been shown in many other works (1,2,3,5), siRNAs do have off-target effects (i.e. other genes are targeted apart those for which they have been designed for). Off-target effects are still very pronounced even in the newest siRNA libraries (3) and they are the cause of very high false positive rates in all the genome-wide siRNA screens (3,4,5). Off-target effects are mainly mediated by the seed sequence of the siRNA (2,3), that hence act in a miRNA-like fashion. \\
 Both artificial siRNA and natural mature miRNAs are in fact RNA molecules of around 21 nucleotides and they act in a very similar way, being both incorporated in the RISC complex. To be more precise, the siRNA is double stranded but only one strand (the guide strand) can enter in the RISC and hence downregulate the transcripts (i.e. most of the companies, including QIAGEN, AMBION and DHARMACON introduced in 2005 a chemical modification that prevents the other strand to enter in the RISC. In our work we confirm that this chemical modification works very well (3) and that most of the off-targets are caused by the guide strand only  ). \\ 
-The only correction methods that have been proposed so far, use the UTRs of the genes (6,7). In particural, for every gene, they look at the siRNAs that contain a seed that can target its UTR and then try to understand whether those siRNAs are effective on the phenotype.While innovative, this approach has the disadvantage that we discard information on the on-target effect of the siRNA.\\
-ScsR, in contrast with the UTR based methods, try to infer the seed-effect (and correct for it) using only the siRNA genome-wide screen data. We will show in this tutorial real case examples of how scsR can get rid of the seed effect on real genome-wide screens. \\
+ScsR tries to infer the seed-effect (and correct for it) using the siRNA genome-wide screen data. We will show in this tutorial real case examples of how scsR can get rid of the seed effect on real genome-wide screens. \\
 Besides, scsR provides several innovative visualization and utility methods that can help the screener in visualizing and mining his data. \\
 For example, only recently, certain groups have used information acquired from off-target effects to predict which human miRNAs can be effective on the phenotype under study (5). In this context, scsR offers several statistics that associate a probability value to each seed (so that the effect of the seed can be determined more reliably), and it maps the seeds automatically to the latest miRNA libraries.\\\\
 ScsR works best with QIAGEN and AMBION single oligo (i.e. unpooled) genome-wide siRNAs screens and with continuos scores in z-scored form. \\\\
-ScsR can in principle also work with pooled siRNAs (e.g. Dharmacon), but with much lower performances with respect to unpooled siRNAs screens.\\
-(N.B. when we run scsR seed\_correction on pooled libraries we aren't able to see a clear increase in performances on our benchmarks, that instead we see when we run it on unpooled libraries. Hence we advice our users to be carefull to use the correction methods in this package on pooled libraries. Differently, all the visualization functions can be safely used also on pooled libraries.  ).\\
+ScsR can also correct pooled siRNA libraries (e.g. DHARMACON), but with lower performances than correcting unpooled siRNAs screens.\\
+We encourage our users to use our benchmark functions to test the results of the correction (and eventually detect possible errors or misusage of the package).\\
 
 
 
@@ -62,20 +61,20 @@ In order to use scsR you need a data frame with 3 columns:\\\\
 
 The name of these columns should be: GeneID, siRNA\_seq and score. If you want to use different names then you need to set the appropriate variables when you call the various functions in this package.\\
 
-In case you are using a pooled library, you have to add one line for every oligo in the pool (i.e. if geneX has 4 oligos pooled, you will put 4 rows in the data frame with the same gene identifier and score, but different oligo sequence).\\
+In case you are using a pooled library, you have to add one line for every oligo in the pool (i.e. if geneX has 4 oligos pooled, you will put 4 rows in the data frame with the same gene identifier, but different oligo sequence).\\
 
 If you come from Excel and/or Matlab you can generate a text file with the format specified above. Then you can use the following function in order to import the file in a data frame in R:\\
 read.table(file\_name, header=TRUE, fill=TRUE, quote="", stringsAsFactors=FALSE)\\\\
 
 
-As an example, we use the analyzed data on the cell number of two genome-wide siRNA screens, performed with different siRNA libraries: QIAGEN unpooled and DHARMACON pooled. 
-In both the screens Hela Cell Lines have been infected by a pathogen and the data has been collected and analyzed using latest technologies.
-Several phenotypes can be inferred from this screen: \\
+As an example, we use the analyzed data of two genome-wide siRNA screens on the UUKUNIEMI virus (5), performed with different siRNA libraries: QIAGEN unpooled and DHARMACON pooled. 
+In both the screens Hela Cell Lines have been infected by the UUKUNIEMI virus and the data has been collected and analyzed using latest technologies.
+Two phenotypes can be inferred from this screen: \\
 - infection inhibition (i.e. when the number of infected cells is reduced)\\
 - infection enhancement (i.e. when the number infected cells increses )\\
-- cell number reduced (i.e. when cell-death and/or block of cell proliferation occurs)\\
-- cell number increased (i.e. when increase in cell proliferation occurs) \\
-We added to this package the data for the cell number phenotype (that we are going to use in the following examples ). However we encrypted both the siRNA sequences and the gene identifiers for copyright issues, in a way that preserves the relation seed vs sequences (i.e. the groups of sequences that share the same seed remain the same) \\
+- cell number reduction (i.e. when cell-death and/or block of cell proliferation occurs)\\
+- cell number increase (i.e. when increase in cell proliferation occurs) \\
+We added to this package the data for the infection phenotype (that we are going to use in the following examples ). However we encrypted the siRNA sequences for copyright issues, in a way that preserves the relation seed vs sequences (i.e. the groups of sequences that share the same seed remain the same) \\
 
 
 <<load_data>>=
@@ -192,7 +191,9 @@ This method assumes that the seed effect acts in an "additive" way to the on-tar
 
 <<seed_correction, eval=FALSE>>=
 screen_corrected <- seed_correction(uuk_screen)
+screen_corrected_dh <- seed_correction_pooled(uuk_screen_dh)
 @
+
 <<plot_screen_hits3, eval=FALSE>>=
 plot_screen_hits(arrange(add_rank_col(screen_corrected), median))
 @
@@ -209,11 +210,18 @@ Hence we calibrate the variable S accordingly (i.e. we set S to be proportional 
 plot_seed_score_sd(uuk_screen)
 @
 \includegraphics{seed_score_sd.pdf}
+
 \begin{Schunk}
 \begin{Sinput}
 
 \end{Sinput}
 \end{Schunk}
+
+In order to correct pooled libraries, the user should make use of our seed\_correction\_pooled function.
+This function performs a weightened mean of all the seeds' scores in the pool, as described in (8).
+The user can also decide to try to correct using only the seed having the highest score in the pool ( setting use\_all\_seeds = FALSE ).
+
+
 
 \pagebreak
 
@@ -244,7 +252,6 @@ After having used a correction method, we may want to benchmark its performances
 The most reliable benchmark system consists in comparing the top n genes of the screen (before and after correction) with a second independent genome wide screen (if available).\\
 The higher the number of shared hits, the better is the correction method.\\
 Indeed, in our example data set, we compare the hits of our UUKUNIEMI QIAGEN screen with he hits of a DHARMACON genome-wide screen that has been performed on the same pathogen (we repeat the comparison for different n and draw a graph).\\
-As you can see in the graph below, the green line (share best hits of CORRECTED QIAGEN with DHARMACON) is always above the black line (share hits of QIAGEN with DHARMACON) and blue line (share hits of QIAGEN with DHARMACON, but with the QIAGEN sorted via RSA method, instead of just using the median ).\\
 
 
 <<benchmark_shared_hits1, eval=FALSE>>=
@@ -256,26 +263,58 @@ benchmark_shared_hits(
   ),
   glB=list(arrange(add_rank_col(uuk_screen_dh), median)$GeneID),
   col=c("black", "blue", "green"),
-  title="UUKUNIEMI Hela Cell Killers"
+  title="UUKUNIEMI Infection Inhibitors"
 )
 @
-\includegraphics{uuk_cn_benchmark_sh.pdf}
+\includegraphics{uuk_benchmark_sh.pdf}
+\pagebreak
+
+As you can see in the graph above, the green line (share best hits of CORRECTED QIAGEN with DHARMACON) is always above the black line (share hits of QIAGEN with DHARMACON) and blue line (share hits of QIAGEN with DHARMACON, but with the QIAGEN sorted via RSA method (9), instead of just using the median ).\\
+
 \begin{Schunk}
 \begin{Sinput}
 
 \end{Sinput}
 \end{Schunk}
+
+
+Similarly, we can benchmark the pooled library (i.e. share best hits of CORRECTED DHARMACON with QIAGEN):
+<<benchmark_shared_hits2, eval=FALSE>>=
+benchmark_shared_hits(
+  glA=list(
+          arrange(add_rank_col(uuk_screen_dh), median)$GeneID, 
+          arrange(add_rank_col(screen_corrected_dh), median)$GeneID
+  ),
+  glB=list(arrange(add_rank_col(uuk_screen), median)$GeneID),
+  col=c("black", "green"),
+  title="UUKUNIEMI Infection Inhibitors (pooled)"
+)
+@
+\includegraphics{uuk_benchmark_sh_pooled.pdf}
+
+
+
+
+\begin{Schunk}
+\begin{Sinput}
+
+\end{Sinput}
+\end{Schunk}
+
+\pagebreak
 
 An alternative benchmarking method, and the only choice in case you don't have a second genome-wide screen, is to look at the increase in the enrichment of gene annotations after correction, mainly the Gene Ontology Biological Process and the KEGG pathways.\\
 We do provide a function that draws an heat map of the enriched annotations for either KEGG or GO.
 In the example below, we compare the enriched GO Biological Processes of the best 400 genes for three possible cases: QIAGEN sorted via median, QIAGEN sorted via RSA method, and QIAGEN corrected with scsR and then sorted via median.\\
 As you can see, there is a strong enrichment in significant pathways after we do apply the seed correction using scsR.\\\\
+
 \begin{Schunk}
 \begin{Sinput}
 
 \end{Sinput}
 \end{Schunk}
-\pagebreak
+
+
 <<enrichment_heatmap1, eval=FALSE>>=
 em = enrichment_heatmap( list(arrange(add_rank_col(uuk_screen), median)$GeneID,
                               arrange(add_rank_col(uuk_screen), log_pval_rsa)$GeneID,
@@ -283,22 +322,37 @@ em = enrichment_heatmap( list(arrange(add_rank_col(uuk_screen), median)$GeneID,
 ),
                          list("No Correction", "RSA", "scsR"),
                          enrichmentType="Process", output_file=NULL,
-                         title="UUKUNIEMI Hela Cell Killers", fdr_threshold=1e-25,
+                         title="UUKUNIEMI Infection Inhibitors", fdr_threshold=0.01,
                          limit=400
 )
 @
-\includegraphics{uuk_cn_enrichment_heatmap.pdf}
+\includegraphics{uuk_enrichment_heatmap.pdf}
+\pagebreak
 
+We can use the same function to benchmark the correction of the DHARMACON pooled genome-wide screen:
+<<enrichment_heatmap1, eval=FALSE>>=
+em_dh = enrichment_heatmap( list(arrange(add_rank_col(uuk_screen_dh), median)$GeneID,
+                              arrange(add_rank_col(screen_corrected_dh), median)$GeneID
+),
+        list("No Correction", "scsR"), enrichmentType="Process", fdr_threshold=0.01,
+        title="UUKUNIEMI Infection Inhibitors (pooled)", 
+)
+@
+\includegraphics{uuk_enrichment_heatmap_pooled.pdf}
 
 
 \pagebreak
 \section{REFERENCES}
-1) Birmingham, A. et al. 3' UTR seed matches, but not overall identity, are associated with RNAi off-targets. Nat Methods 3, 199-204 (2006).\\
-2) Jackson AL, et al. (2003) Expression profiling reveals off-target gene regulation by RNAi. Nature biotechnology 21(6):635-637.\\
-3) Franceschini A. et al. Specific inhibition of diverse pathogens in human cells by synthetic miRNA-like oligonucleotides inferred from genome-wide RNAi screens. Submitted (2013).\\
-4) Bushman FD, et al. (2009) Host cell factors in HIV replication: meta-analysis of genome-wide studies. PLoS pathogens 5(5):e1000437.
-5) Genome-wide siRNA screens reveal regulation of bunyavirus intracellular trafficking by miRNAs. Submitted (2013).\\
-6) Buehler E, et al. (2012) siRNA off-target effects in genome-wide screens identify signaling pathway members. Scientific reports 2:428.\\
-7) Sigoillot FD, et al. (2012) A bioinformatics method identifies prominent off-targeted transcripts in RNAi screens. Nature methods 9(4):363-366.\\
+\begin{enumerate}
+\item Birmingham, A. et al. 3' UTR seed matches, but not overall identity, are associated with RNAi off-targets. Nat Methods 3, 199-204 (2006).\\
+\item Jackson AL, et al. (2003) Expression profiling reveals off-target gene regulation by RNAi. Nature biotechnology 21(6):635-637.\\
+\item Franceschini A. et al. Specific inhibition of diverse pathogens in human cells by synthetic miRNA-like oligonucleotides inferred from genome-wide RNAi screens. Submitted (2013).\\
+\item Bushman FD, et al. (2009) Host cell factors in HIV replication: meta-analysis of genome-wide studies. PLoS pathogens 5(5):e1000437.\\
+\item Meier et al. (2014) Genome-wide siRNA screens reveal VAMP3 as a novel host factor required for Uukuniemi virus late penetration. Journal of Virology. \\
+\item Buehler E, et al. (2012) siRNA off-target effects in genome-wide screens identify signaling pathway members. Scientific reports 2:428.\\
+\item Sigoillot FD, et al. (2012) A bioinformatics method identifies prominent off-targeted transcripts in RNAi screens. Nature methods 9(4):363-366.\\
+\item Seed correction for siRNA (scsR) off-targets. Towards a better understanding of genome-wide siRNA screens reproducibility. In preparation. \\
+\item Konig R, et al. A probability-based approach for the analysis of large-scale RNAi screens. Nat Methods. 2007;4:847-849.
 
+\end{enumerate}
 \end{document}

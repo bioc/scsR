@@ -168,29 +168,29 @@ randomSortOnVal = function(screen, strColVal){
 
 
 transcribe_seqs = function(df, seqColName="siRNA_seq", toDNA=FALSE, progress_bar=FALSE){
-  if( exists("progress_bar") && progress_bar){
-    pb <- txtProgressBar(min = 0, max = nrow(df)/1000, style = 3, width=100)
-  }
-  seqV=as.character(df[, seqColName])
-  seqVtranscribed = rep(NA, length(seqV))
-  for(i in 1:length(seqV)){
-    if(exists("progress_bar") && progress_bar && i%%1000==0 ){
-       setTxtProgressBar(pb, i/1000)
+    if( exists("progress_bar") && progress_bar){
+        pb <- txtProgressBar(min = 0, max = nrow(df)/1000, style = 3, width=100)
     }
-    if(!is.na(seqV[i]) & nchar(seqV[i])>0 ){
-      if(grepl( "U", seqV[i]) | grepl("u", seqV[i])) {
-        seqTemp = rna2dna(RNAString(seqV[i]))
-      }else{
-        seqTemp = DNAString(seqV[i])
-      }
-      seqVtranscribed[i] =  as.character(dna2rna(reverseComplement(DNAString(seqTemp))))
-      if(toDNA) {
-        seqVtranscribed[i] = as.character(rna2dna(RNAString(seqVtranscribed[i])))
-      }
+    seqV=as.character(df[, seqColName])
+    seqVtranscribed = rep(NA, length(seqV))
+    for(i in 1:length(seqV)){
+        if(exists("progress_bar") && progress_bar && i%%1000==0 ){
+            setTxtProgressBar(pb, i/1000)
+        }
+        if(!is.na(seqV[i]) & nchar(seqV[i])>0 ){
+            if(grepl( "U", seqV[i]) | grepl("u", seqV[i])) {
+                seqTemp = DNAString(RNAString(seqV[i]))
+            }else{
+                seqTemp = DNAString(seqV[i])
+            }
+            seqVtranscribed[i] =  as.character(dna2rna(reverseComplement(DNAString(seqTemp))))
+            if(toDNA) {
+                seqVtranscribed[i] = as.character(rna2dna(RNAString(seqVtranscribed[i])))
+            }
+        }
     }
-  }
-  df[seqColName] = seqVtranscribed 
-  return(df)
+    df[seqColName] = seqVtranscribed 
+    return(df)
 }
 
 
