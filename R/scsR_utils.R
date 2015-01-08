@@ -183,9 +183,9 @@ transcribe_seqs = function(df, seqColName="siRNA_seq", toDNA=FALSE, progress_bar
             }else{
                 seqTemp = DNAString(seqV[i])
             }
-            seqVtranscribed[i] =  as.character(dna2rna(reverseComplement(DNAString(seqTemp))))
+            seqVtranscribed[i] =  as.character(RNAString(reverseComplement(DNAString(seqTemp))))
             if(toDNA) {
-                seqVtranscribed[i] = as.character(rna2dna(RNAString(seqVtranscribed[i])))
+                seqVtranscribed[i] = as.character(DNAString(RNAString(seqVtranscribed[i])))
             }
         }
     }
