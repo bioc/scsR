@@ -1,7 +1,7 @@
 Package: scsR
 Type: Package
 Title: SiRNA correction for seed mediated off-target effect
-Version: 1.7.0
+Version: 1.8.0
 Date: 2014-10-28
 Author: Andrea Franceschini
 Maintainer: Andrea Franceschini <andrea.franceschini@isb-sib.ch>, Roger Meier <roger.meier@lmsc.ethz.ch>, Christian von Mering <mering@imls.uzh.ch>
